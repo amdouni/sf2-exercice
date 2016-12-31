@@ -3,12 +3,8 @@
 namespace ExerciseBundle\Controller;
 
 use FOS\RestBundle\Controller\FOSRestController;
-use FOS\RestBundle\Controller\Annotations\View;
 use Symfony\Component\HttpFoundation\Request;
-use ExerciseBundle\Entity\Knight;
-use ExerciseBundle\Form\KnightFormType;
 use Symfony\Component\Routing\Exception\ResourceNotFoundException;
-use Symfony\Component\Validator\Exception\ValidatorException;
 
 /**
  * Class KnightController
@@ -18,36 +14,27 @@ use Symfony\Component\Validator\Exception\ValidatorException;
 class KnightController extends FOSRestController
 {
 
+    public function getKnightHandler()
+    {
+        return $this->get('exercise.knight.handler');
+    }
 
-
+    /**
+     * Creates Knight
+     *
+     * @param Request $request
+     * @return \Symfony\Component\HttpFoundation\Response
+     */
     public function postKnightAction(Request $request)
     {
 
+        // Get post data and transform it into regular array
         $data = json_decode($request->getContent(), true);
 
-        $knight = new Knight;
+        // Create new resource and get response code
+        $response = $this->getKnightHandler()->post($data);
 
-        $form = $this->createForm(new KnightFormType, $knight);
-
-        $form->submit($data);
-
-        $form->handleRequest($request);
-
-
-        if (!$form->isValid()) {
-            $data = array(
-                'code' => 400,
-                'message' => 'Invalid data'
-            );
-            $view = $this->view($data, 400);
-            return $this->handleView($view);
-        }
-
-        $em = $this->getDoctrine()->getManager();
-        $em->persist($knight);
-        $em->flush();
-
-        $view = $this->view($knight, 201);
+        $view = $this->view($response, $response['code']);
         return $this->handleView($view);
 
     }
@@ -59,9 +46,9 @@ class KnightController extends FOSRestController
      */
     public function getKnightsAction()
     {
-        $em = $this->getDoctrine()->getManager();
-
-        $knights = $em->getRepository('ExerciseBundle:Knight')->findAll();
+        //  Get all knights. No offset have been added as we have not pagination
+        // No special exception have been managed
+        $knights = $this->getKnightHandler()->all(null, null);
 
         $view = $this->view($knights, 200);
 
@@ -75,9 +62,8 @@ class KnightController extends FOSRestController
      */
     public function getKnightAction($id)
     {
-        $em = $this->getDoctrine()->getManager();
-
-        $knight = $em->getRepository('ExerciseBundle:Knight')->find($id);
+        // Get knight by Id
+        $knight = $this->getKnightHandler()->get($id);
 
         if (!isset($knight)) {
             throw new ResourceNotFoundException("Knight #" . $id . " not found.");
@@ -86,11 +72,6 @@ class KnightController extends FOSRestController
         $view = $this->view($knight, 200);
 
         return $this->handleView($view);
-    }
-
-    public function getKnightHandler()
-    {
-        return $this->knightHandler = $this->get('exercise.knight.handler');
     }
 
 }

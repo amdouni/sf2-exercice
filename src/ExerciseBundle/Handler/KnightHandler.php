@@ -2,7 +2,8 @@
 
 namespace ExerciseBundle\Handler;
 
-
+use ExerciseBundle\Entity\Knight;
+use ExerciseBundle\Form\KnightFormType;
 /**
  * Knight handler
  *
@@ -17,11 +18,11 @@ class KnightHandler implements HandlerInterface
     protected $knight;
 
 
-    public function __construct($entityManager, $knight, $form)
+    public function __construct($entityManager, $knight, $formFactory)
     {
         $this->em = $entityManager;
         $this->knight = $knight;
-        $this->form = $form;
+        $this->form = $formFactory;
     }
     /**
      * Get a resource
@@ -31,7 +32,7 @@ class KnightHandler implements HandlerInterface
      */
     public function get($id)
     {
-
+        return $this->em->getRepository('ExerciseBundle:Knight')->find($id);
     }
 
     /**
@@ -43,7 +44,7 @@ class KnightHandler implements HandlerInterface
      */
     public function all($limit, $offset)
     {
-
+        return $this->em->getRepository('ExerciseBundle:Knight')->findAll();
     }
 
     /**
@@ -54,6 +55,28 @@ class KnightHandler implements HandlerInterface
      */
     public function post($resource)
     {
+        $knight = new Knight;
 
+        $form = $this->form->create(new KnightFormType, $knight);
+
+        $form->submit($resource);
+
+
+        if (!$form->isValid()) {
+            $response = array(
+                'code' => 400,
+                'message' => 'Invalid data'
+            );
+        } else {
+            $this->em->persist($knight);
+            $this->em->flush();
+
+            $response = array(
+                'code' => 201,
+                'message' => 'Resource registred successfully'
+            );
+        }
+
+        return $response;
     }
 }
